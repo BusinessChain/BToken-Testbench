@@ -24,8 +24,6 @@ namespace BToken.Chaining
     public HeaderLocator Locator;
 
     ChainInserter Inserter;
-
-    const int HEADERS_COUNT_MAX = 2000;
     
     public readonly object LOCK_Chain = new object();
 
