@@ -8,7 +8,6 @@ using BToken.Chaining;
 using BToken.Networking;
 
 // Test
-// This is only in Testbench
 
 namespace BToken
 {
