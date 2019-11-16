@@ -7,8 +7,6 @@ using System.Security.Cryptography;
 
 using BToken.Networking;
 
-
-
 namespace BToken.Chaining
 {
   public partial class Headerchain
