@@ -23,7 +23,7 @@ namespace BToken.Chaining
     public HeaderLocator Locator;
 
     ChainInserter Inserter;
-    
+
     public readonly object LOCK_Chain = new object();
 
     public HeaderchainSynchronizer Synchronizer;
@@ -58,20 +58,20 @@ namespace BToken.Chaining
       await Synchronizer.Start();
     }
 
-    
+
 
     void InsertContainer(HeaderContainer container)
     {
       Chain rivalChain = Inserter.InsertHeaderRoot(
         container.HeaderRoot);
-      
+
       Console.WriteLine("Inserted {0} header, blockheight {1}, tip {2}",
         container.CountItems,
         GetHeight(),
         container.HeaderTip.HeaderHash.ToHexString());
 
       if (
-        rivalChain != null 
+        rivalChain != null
         && rivalChain.IsStrongerThan(MainChain))
       {
         SecondaryChains.Remove(rivalChain);
@@ -83,7 +83,7 @@ namespace BToken.Chaining
     }
 
 
-             
+
     public int GetHeight()
     {
       return MainChain.Height;
@@ -155,16 +155,16 @@ namespace BToken.Chaining
         }
       }
 
-      if(header == null)
+      if (header == null)
       {
         throw new ChainException(string.Format(
           "Locator does not root in headerchain."));
       }
 
-      List<Header> headers = new List<Header>() { header };
+      List<Header> headers = new List<Header>();
 
-      while(
-        header.HeadersNext.Count > 0 && 
+      while (
+        header.HeadersNext.Count > 0 &&
         headers.Count < count)
       {
         headers.Add(header.HeadersNext.First());

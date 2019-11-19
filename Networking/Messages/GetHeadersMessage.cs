@@ -16,7 +16,7 @@ namespace BToken.Networking
 
 
     public GetHeadersMessage(
-      IEnumerable<byte[]> headerLocator, 
+      IEnumerable<byte[]> headerLocator,
       uint protocolVersion)
       : base("getheaders")
     {

@@ -58,7 +58,7 @@ namespace BToken.Chaining
 
         Depth++;
       }
-
+      
       public bool IsTip() => Header == Chain.HeaderTip;
       public int GetHeight() => Chain.Height - Depth;
     }

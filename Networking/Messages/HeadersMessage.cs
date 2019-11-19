@@ -13,7 +13,7 @@ namespace BToken.Networking
 
 
     public HeadersMessage(
-      List<Header> headers) 
+      List<Header> headers)
       : base("headers")
     {
       Headers = headers;
@@ -25,7 +25,7 @@ namespace BToken.Networking
 
       payload.AddRange(VarInt.GetBytes(Headers.Count));
 
-      foreach(Header header in Headers)
+      foreach (Header header in Headers)
       {
         payload.AddRange(header.GetBytes());
         payload.Add(0);
@@ -34,7 +34,7 @@ namespace BToken.Networking
       Payload = payload.ToArray();
     }
 
-    public HeadersMessage(NetworkMessage message) 
+    public HeadersMessage(NetworkMessage message)
       : base("headers", message.Payload)
     {
       int startIndex = 0;
@@ -46,8 +46,8 @@ namespace BToken.Networking
       {
         Headers.Add(
           Header.ParseHeader(
-            Payload, 
-            ref startIndex, 
+            Payload,
+            ref startIndex,
             sHA256));
 
         startIndex += 1; // skip txCount (always zero)

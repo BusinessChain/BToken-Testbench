@@ -66,7 +66,7 @@ namespace BToken
           await Network.AcceptChannelInboundRequestAsync();
 
         List<NetworkMessage> messages = channel.GetApplicationMessages();
-        
+
         if (!UTXOTable.Synchronizer.GetIsSyncingCompleted())
         {
           channel.Release();
@@ -77,12 +77,13 @@ namespace BToken
         {
           foreach (NetworkMessage message in messages)
           {
+            Console.WriteLine("{0} message from {1}",
+              message.Command,
+              channel.GetIdentification());
+
             switch (message.Command)
             {
               case "getheaders":
-                Console.WriteLine("getHeaders message from {0}",
-                  channel.GetIdentification());
-
                 var getHeadersMessage = new GetHeadersMessage(message);
 
                 var headers = Headerchain.GetHeaders(
@@ -97,7 +98,7 @@ namespace BToken
               case "inv":
                 var invMessage = new InvMessage(message);
 
-                if(invMessage.Inventories.Any(
+                if (invMessage.Inventories.Any(
                   inv => inv.Type.ToString() == "MSG_BLOCK"))
                 {
                   Console.WriteLine("block inventory message from channel {0}",
@@ -106,7 +107,7 @@ namespace BToken
                   Headerchain.Synchronizer.LoadBatch();
                   Headerchain.Synchronizer.DownloadHeaders(channel);
 
-                  if(Headerchain.Synchronizer.TryInsertBatch())
+                  if (Headerchain.Synchronizer.TryInsertBatch())
                   {
                     if (!await UTXOTable.Synchronizer.TrySynchronize(channel))
                     {
@@ -126,9 +127,6 @@ namespace BToken
 
               case "headers":
                 var headersMessage = new HeadersMessage(message);
-
-                Console.WriteLine("header message from channel {0}",
-                  channel.GetIdentification());
 
                 if (Headerchain.Synchronizer.TryInsertHeaderBytes(
                   headersMessage.Payload))
