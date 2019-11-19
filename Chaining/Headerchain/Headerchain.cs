@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 
 using BToken.Networking;
+
+
 
 namespace BToken.Chaining
 {
@@ -133,6 +134,44 @@ namespace BToken.Chaining
 
         headers.Add(header);
       }
+    }
+
+    public List<Header> GetHeaders(
+      IEnumerable<byte[]> locatorHashes,
+      int count)
+    {
+      Header header = null;
+
+      foreach (byte[] hash in locatorHashes)
+      {
+        try
+        {
+          header = ReadHeader(hash);
+          break;
+        }
+        catch (ChainException)
+        {
+          continue;
+        }
+      }
+
+      if(header == null)
+      {
+        throw new ChainException(string.Format(
+          "Locator does not root in headerchain."));
+      }
+
+      List<Header> headers = new List<Header>() { header };
+
+      while(
+        header.HeadersNext.Count > 0 && 
+        headers.Count < count)
+      {
+        headers.Add(header.HeadersNext.First());
+        header = header.HeadersNext.First();
+      }
+
+      return headers;
     }
   }
 }

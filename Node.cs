@@ -66,6 +66,12 @@ namespace BToken
           await Network.AcceptChannelInboundRequestAsync();
 
         List<NetworkMessage> messages = channel.GetApplicationMessages();
+        
+        if (!UTXOTable.Synchronizer.GetIsSyncingCompleted())
+        {
+          channel.Release();
+          continue;
+        }
 
         try
         {
@@ -77,19 +83,18 @@ namespace BToken
                 Console.WriteLine("getHeaders message from {0}",
                   channel.GetIdentification());
 
-                //var getHeadersMessage = new GetHeadersMessage(inboundMessage);
-                //var headers = Headerchain.GetHeaders(getHeadersMessage.HeaderLocator, getHeadersMessage.StopHash);
-                //await channel.SendMessageAsync(new HeadersMessage(headers));
+                var getHeadersMessage = new GetHeadersMessage(message);
+
+                var headers = Headerchain.GetHeaders(
+                  getHeadersMessage.HeaderLocator,
+                  2000);
+
+                await channel.SendMessage(
+                  new HeadersMessage(headers));
+
                 break;
 
               case "inv":
-
-                if (!UTXOTable.Synchronizer.GetIsSyncingCompleted())
-                {
-                  channel.Release();
-                  break;
-                }
-
                 var invMessage = new InvMessage(message);
 
                 if(invMessage.Inventories.Any(
@@ -121,12 +126,6 @@ namespace BToken
 
               case "headers":
                 var headersMessage = new HeadersMessage(message);
-
-                if(!UTXOTable.Synchronizer.GetIsSyncingCompleted())
-                {
-                  channel.Release();
-                  break;
-                }
 
                 Console.WriteLine("header message from channel {0}",
                   channel.GetIdentification());

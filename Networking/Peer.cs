@@ -98,11 +98,7 @@ namespace BToken.Networking
         {
           NetworkMessage message = await NetworkMessageStreamer
             .ReadAsync(default).ConfigureAwait(false);
-
-          Console.WriteLine("received {0} message from {1}",
-            message.Command,
-            GetIdentification());
-
+          
           switch (message.Command)
           {
             case "ping":
@@ -325,9 +321,6 @@ namespace BToken.Networking
           new GetHeadersMessage(
             locatorHashes,
             ProtocolVersion));
-
-        Console.WriteLine("sent getheaders to channel {0}",
-          GetIdentification());
 
         while (true)
         {
