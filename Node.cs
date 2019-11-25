@@ -27,6 +27,11 @@ namespace BToken
         new HeaderLocation(height : 535419, hash : "000000000000000000209ecbacceb3e7b8ec520ed7f1cfafbe149dd2b9007d39")
       };
 
+    byte[] StopHashTestSynchronization =
+      "000000007bc154e0fa7ea32218a72fe2c1bb9f86cf8c9ebf9a715ed27fdb229a"
+      .ToBinary();
+
+
     public Node()
     {
       Network = new Network();
@@ -77,14 +82,38 @@ namespace BToken
         {
           foreach (NetworkMessage message in messages)
           {
-            Console.WriteLine("{0} message from {1}",
-              message.Command,
-              channel.GetIdentification());
+            if(channel.IsConnectionTypeInbound())
+            {
+              Console.WriteLine("{0} message from {1}",
+                message.Command,
+                channel.GetIdentification());
+            }
 
             switch (message.Command)
             {
               case "getdata":
                 var getDataMessage = new GetDataMessage(message);
+
+                foreach(Inventory inventory in getDataMessage.Inventories)
+                {
+                  if(inventory.Type == InventoryType.MSG_BLOCK)
+                  {
+                    if(UTXOTable.Synchronizer.TryGetBlockFromArchive(
+                      inventory.Hash, 
+                      out byte[] blockBytes))
+                    {
+                      NetworkMessage blockMessage = new NetworkMessage(
+                        "block",
+                        blockBytes);
+
+                      await channel.SendMessage(blockMessage);
+                    }
+                    else
+                    {
+                      // Send reject message;
+                    }
+                  }
+                }
                 
                 break;
 
@@ -93,7 +122,8 @@ namespace BToken
 
                 var headers = Headerchain.GetHeaders(
                   getHeadersMessage.HeaderLocator,
-                  2000);
+                  2000,
+                  StopHashTestSynchronization);
 
                 await channel.SendMessage(
                   new HeadersMessage(headers));
@@ -104,7 +134,7 @@ namespace BToken
                 var invMessage = new InvMessage(message);
 
                 if (invMessage.Inventories.Any(
-                  inv => inv.Type.ToString() == "MSG_BLOCK"))
+                  inv => inv.Type == InventoryType.MSG_BLOCK))
                 {
                   Console.WriteLine("block inventory message from channel {0}",
                     channel.GetIdentification());
