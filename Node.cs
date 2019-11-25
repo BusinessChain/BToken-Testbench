@@ -27,6 +27,11 @@ namespace BToken
         new HeaderLocation(height : 535419, hash : "000000000000000000209ecbacceb3e7b8ec520ed7f1cfafbe149dd2b9007d39")
       };
 
+    byte[] StopHashTestSynchronization =
+      "000000007bc154e0fa7ea32218a72fe2c1bb9f86cf8c9ebf9a715ed27fdb229a"
+      .ToBinary();
+
+
     public Node()
     {
       Network = new Network();
@@ -118,7 +123,7 @@ namespace BToken
                 var headers = Headerchain.GetHeaders(
                   getHeadersMessage.HeaderLocator,
                   2000,
-                  getHeadersMessage.StopHash);
+                  StopHashTestSynchronization);
 
                 await channel.SendMessage(
                   new HeadersMessage(headers));
