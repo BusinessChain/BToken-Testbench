@@ -28,7 +28,7 @@ namespace BToken
       };
 
     byte[] StopHashTestSynchronization =
-      "000000007bc154e0fa7ea32218a72fe2c1bb9f86cf8c9ebf9a715ed27fdb229a"
+      "0000000067a97a2a37b8f190a17f0221e9c3f4fa824ddffdc2e205eae834c8d7"
       .ToBinary();
 
 
@@ -46,7 +46,6 @@ namespace BToken
         Headerchain);
       UTXOTable.Network = Network;
 
-
       Wallet = new Wallet();
     }
 
@@ -59,6 +58,8 @@ namespace BToken
       await Headerchain.Start();
 
       await UTXOTable.Start();
+
+      StartTestMiner();
 
       Wallet.GeneratePublicKey();
     }
@@ -98,7 +99,10 @@ namespace BToken
                 {
                   if(inventory.Type == InventoryType.MSG_BLOCK)
                   {
-                    if(UTXOTable.Synchronizer.TryGetBlockFromArchive(
+                    Console.WriteLine("requesting block {0}",
+                      inventory.Hash.ToHexString());
+
+                    if (UTXOTable.Synchronizer.TryGetBlockFromArchive(
                       inventory.Hash, 
                       out byte[] blockBytes))
                     {
@@ -202,6 +206,28 @@ namespace BToken
           Network.DisposeChannel(channel);
         }
 
+      }
+    }
+
+    async Task StartTestMiner()
+    {
+      Header header =
+        Headerchain.ReadHeader(StopHashTestSynchronization);
+
+      await Task.Delay(15000);
+
+      while (header.HeadersNext.Any())
+      {
+        await Task.Delay(10000);
+
+        header = header.HeadersNext.First();
+
+        Network.SendToInbound(
+          new HeadersMessage(
+            new List<Header>() { header }));
+
+        Console.WriteLine("broadcasted {0}",
+          header.HeaderHash.ToHexString());
       }
     }
   }
