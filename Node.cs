@@ -222,9 +222,17 @@ namespace BToken
 
         header = header.HeadersNext.First();
 
+        var inventory = new Inventory(
+          InventoryType.MSG_BLOCK,
+          header.HeaderHash);
+
         Network.SendToInbound(
-          new HeadersMessage(
-            new List<Header>() { header }));
+          new InvMessage(
+            new List<Inventory>() { inventory }));
+
+        //Network.SendToInbound(
+        //  new HeadersMessage(
+        //    new List<Header>() { header }));
 
         Console.WriteLine("broadcasted {0}",
           header.HeaderHash.ToHexString());
