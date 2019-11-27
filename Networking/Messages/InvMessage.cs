@@ -22,6 +22,8 @@ namespace BToken.Networking
 
       Inventories.ForEach(
         i => payload.AddRange(i.GetBytes()));
+
+      Payload = payload.ToArray();
     }
 
     public InvMessage(NetworkMessage networkMessage) 
