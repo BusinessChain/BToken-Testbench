@@ -31,6 +31,8 @@ namespace BToken
       "0000000067a97a2a37b8f190a17f0221e9c3f4fa824ddffdc2e205eae834c8d7"
       .ToBinary();
 
+    bool IsDUTSynchronized = false;
+
 
     public Node()
     {
@@ -79,11 +81,11 @@ namespace BToken
           continue;
         }
 
-        try
+        foreach (NetworkMessage message in messages)
         {
-          foreach (NetworkMessage message in messages)
+          try
           {
-            if(channel.IsConnectionTypeInbound())
+            if (channel.IsConnectionTypeInbound())
             {
               Console.WriteLine("{0} message from {1}",
                 message.Command,
@@ -95,15 +97,15 @@ namespace BToken
               case "getdata":
                 var getDataMessage = new GetDataMessage(message);
 
-                foreach(Inventory inventory in getDataMessage.Inventories)
+                foreach (Inventory inventory in getDataMessage.Inventories)
                 {
-                  if(inventory.Type == InventoryType.MSG_BLOCK)
+                  if (inventory.Type == InventoryType.MSG_BLOCK)
                   {
                     Console.WriteLine("requesting block {0}",
                       inventory.Hash.ToHexString());
 
                     if (UTXOTable.Synchronizer.TryGetBlockFromArchive(
-                      inventory.Hash, 
+                      inventory.Hash,
                       out byte[] blockBytes))
                     {
                       NetworkMessage blockMessage = new NetworkMessage(
@@ -118,16 +120,41 @@ namespace BToken
                     }
                   }
                 }
-                
+
                 break;
 
               case "getheaders":
                 var getHeadersMessage = new GetHeadersMessage(message);
 
-                var headers = Headerchain.GetHeaders(
-                  getHeadersMessage.HeaderLocator,
-                  2000,
-                  StopHashTestSynchronization);
+                Console.WriteLine("Locator:");
+                getHeadersMessage.HeaderLocator.ToList().ForEach(
+                  hash => Console.WriteLine(hash.ToHexString()));
+
+                List<Header> headers;
+
+                if (IsDUTSynchronized == false)
+                {
+                  headers = Headerchain.GetHeaders(
+                    getHeadersMessage.HeaderLocator,
+                    2000,
+                    StopHashTestSynchronization);
+
+                  if (headers.Count == 0)
+                  {
+                    IsDUTSynchronized = true;
+                  }
+                }
+                else
+                {
+                  headers = Headerchain.GetHeaders(
+                    getHeadersMessage.HeaderLocator,
+                    1,
+                    getHeadersMessage.StopHash);
+                }
+
+                Console.WriteLine("send headers:");
+                headers.ForEach(
+                  h => Console.WriteLine(h.HeaderHash.ToHexString()));
 
                 await channel.SendMessage(
                   new HeadersMessage(headers));
@@ -144,7 +171,7 @@ namespace BToken
                     channel.GetIdentification());
 
                   Headerchain.Synchronizer.LoadBatch();
-                  Headerchain.Synchronizer.DownloadHeaders(channel);
+                  await Headerchain.Synchronizer.DownloadHeaders(channel);
 
                   if (Headerchain.Synchronizer.TryInsertBatch())
                   {
@@ -171,9 +198,9 @@ namespace BToken
                   headersMessage.Payload))
                 {
                   headersMessage.Headers.ForEach(
-                    h => Console.WriteLine("inserted header {0}", 
+                    h => Console.WriteLine("inserted header {0}",
                     h.HeaderHash.ToHexString()));
-                  
+
                   Console.WriteLine("blockheight {0}", Headerchain.GetHeight());
 
                   if (!await UTXOTable.Synchronizer.TrySynchronize(channel))
@@ -194,17 +221,19 @@ namespace BToken
                 break;
             }
           }
+          catch (Exception ex)
+          {
+            Console.WriteLine(
+              "Serving inbound request {0} of channel {1} ended in exception {2}",
+              message.Command,
+              channel.GetIdentification(),
+              ex.Message);
 
-          channel.Release();
+            Network.DisposeChannel(channel);
+          }
         }
-        catch (Exception ex)
-        {
-          Console.WriteLine("Serving inbound request of channel '{0}' ended in exception '{1}'",
-            channel.GetIdentification(),
-            ex.Message);
 
-          Network.DisposeChannel(channel);
-        }
+        channel.Release();
 
       }
     }
@@ -214,12 +243,10 @@ namespace BToken
       Header header =
         Headerchain.ReadHeader(StopHashTestSynchronization);
 
-      await Task.Delay(15000);
+      await Task.Delay(20000);
 
       while (header.HeadersNext.Any())
       {
-        await Task.Delay(10000);
-
         header = header.HeadersNext.First();
 
         var inventory = new Inventory(
@@ -236,6 +263,8 @@ namespace BToken
 
         Console.WriteLine("broadcasted {0}",
           header.HeaderHash.ToHexString());
+
+        await Task.Delay(10000);
       }
     }
   }
