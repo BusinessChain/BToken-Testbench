@@ -164,15 +164,27 @@ namespace BToken
               case "inv":
                 var invMessage = new InvMessage(message);
 
-                if (invMessage.Inventories.Any(
-                  inv => inv.Type == InventoryType.MSG_BLOCK))
+                foreach (Inventory inv in invMessage.Inventories
+                  .Where(inv => inv.Type == InventoryType.MSG_BLOCK).ToList())
                 {
-                  Console.WriteLine("block inventory message from channel {0}",
-                    channel.GetIdentification());
+                  Console.WriteLine("inv message {0} from {1}",
+                       inv.Hash.ToHexString(),
+                       channel.GetIdentification());
+
+                  if (Headerchain.TryReadHeader(
+                    inv.Hash,
+                    out Header headerAdvertized))
+                  {
+                    Console.WriteLine(
+                      "Advertized block {0} already in chain",
+                      inv.Hash.ToHexString());
+
+                    break;
+                  }
 
                   Headerchain.Synchronizer.LoadBatch();
                   await Headerchain.Synchronizer.DownloadHeaders(channel);
-
+                  
                   if (Headerchain.Synchronizer.TryInsertBatch())
                   {
                     if (!await UTXOTable.Synchronizer.TrySynchronize(channel))
@@ -240,8 +252,7 @@ namespace BToken
 
     async Task StartTestMiner()
     {
-      Header header =
-        Headerchain.ReadHeader(StopHashTestSynchronization);
+      Headerchain.TryReadHeader(StopHashTestSynchronization, out Header header);
 
       await Task.Delay(20000);
 
